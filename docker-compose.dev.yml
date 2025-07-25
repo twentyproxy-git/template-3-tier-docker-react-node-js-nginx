@@ -1,0 +1,78 @@
+services:
+  client-react-vite:
+    image: client-react-vite
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    init: true
+    volumes:
+      - type: bind
+        source: ./frontend
+        target: /usr/src/app/
+      - type: volume
+        target: /usr/src/app/node_modules
+      - type: bind
+        source: ./frontend/vite.config.js
+        target: /usr/src/app/vite.config.js
+    networks:
+      - frontend
+    ports:
+      - "5173:5173"
+
+  api-node:
+    image: api-node
+    build:
+      context: ./backend/
+      dockerfile: Dockerfile
+      target: dev
+    environment:
+      - DATABASE_URL=mysql://user:userpass@db:3306/mydb
+    volumes:
+      - type: bind
+        source: ./backend/
+        target: /usr/src/app/
+      - type: volume
+        target: /usr/src/app/node_modules
+    depends_on:
+      - db
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+    networks:
+      - backend
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOST: db
+      PMA_USER: user
+      PMA_PASSWORD: userpass
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    networks:
+      - backend
+
+volumes:
+  mysqldata:
+
+networks:
+  frontend:
+  backend:

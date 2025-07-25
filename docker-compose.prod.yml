@@ -1,0 +1,53 @@
+services:
+  client-react-nginx:
+    image: client-react-nginx
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+      target: prod
+    init: true
+    networks:
+      - frontend
+      - backend
+    ports:
+      - "80:8080"
+    restart: unless-stopped
+
+  api-node:
+    image: api-node
+    build:
+      context: ./backend/
+      dockerfile: Dockerfile
+      target: prod
+    init: true
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=mysql://user:userpass@db:3306/mydb
+    networks:
+      - frontend
+      - backend
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpass
+    ports:
+      - 3306:3306
+    volumes:
+      - mysqldata:/var/lib/mysql
+    networks:
+      - backend
+
+volumes:
+  mysqldata:
+
+networks:
+  frontend:
+  backend:
